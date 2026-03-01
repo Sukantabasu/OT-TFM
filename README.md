@@ -28,6 +28,8 @@ The pipeline is validated using data from the **Mauna Loa Observatory ISFF tower
 ```
 ├── Step1_Preprocess.py       # Data loading, despiking, feature engineering
 ├── Step2_TFM.py              # Foundation model training, ensemble prediction, SHAP analysis
+├── Step3_TimeSeriesPlots.m   # 4-panel weekly time-series plot of observed vs. predicted Cn2 (Figure 1)
+├── Step4_ScatterPlots.m      # Density-colored scatter plots of observed vs. predicted log₁₀(Cn2) (Figure 2)
 ├── DATA/                     # Raw NetCDF input files (not included; see Data section)
 ├── ExtractedDATA/            # Preprocessed CSV outputs from Step 1
 └── FinalResults/             # Model predictions, R² summaries, and SHAP outputs
