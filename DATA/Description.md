@@ -1,1 +1,1 @@
-
+Raw data are 5-minute NetCDF files from the NSF NCAR/EOL ISFS Mauna Loa Cn2 field campaign (June–August 2006). Files follow the naming convention isff_2006MMDD.nc and should be placed in DATA/HAWAII2006/Mauna_Loa_ISFF/. The dataset is publicly available at https://www.eol.ucar.edu/field_projects/mlocn2.
