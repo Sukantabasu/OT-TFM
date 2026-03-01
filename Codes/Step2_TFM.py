@@ -1,7 +1,98 @@
+# Copyright (c) 2026 Sukanta Basu
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+
+"""
+File: Step2_TFM.py
+==================
+:Author: Sukanta Basu (University at Albany)
+:Date: March 1, 2026
+:Description: Variable training sample size sensitivity analysis using
+    tabular foundation models (TabPFNv2 or TabDPT) for Cn2 prediction at
+    the Mauna Loa Observatory 15 m tower level.
+
+Associated Publication:
+-----------------------
+S. Basu, "Leveraging deep learning-based foundation models for optical
+turbulence (Cn²) estimation under data scarcity," Applied Optics,
+https://doi.org/10.1364/AO.585045
+
+This script implements the modeling experiments and interpretability
+analysis described in Section 4 of the paper (Sections 4A–4D), and
+reproduces Tables 1 and 2 and Figures 1 and 2.
+
+Overall Strategy:
+-----------------
+Step 2a — Data preparation (Section 3F of the paper):
+    Load the preprocessed CSV from Step 1. Partition into training months
+    (June + August) and a held-out test set (July, comprising 7731 samples).
+    Drop rows with any missing feature or target values.
+
+Step 2b — Variable sample size loop (Section 4C, Table 1 of the paper):
+    Systematically subset the training data in increments of 288 samples
+    (one day of 5-minute observations), from 1 day up to the maximum
+    available training days (~18 days). For each subset size, fit an
+    ensemble of TabPFNv2 (or TabDPT) regressors on independently shuffled
+    draws from the training pool. Training data are added sequentially from
+    the start of the training period to avoid temporal leakage.
+
+Step 2c — Ensemble prediction and evaluation (Section 4A–4C of the paper):
+    Predict log10(Cn2) on the July test set for each ensemble member.
+    Compute ensemble median and mean predictions. Evaluate R2 for median,
+    mean, and each individual member. Record in-context learning (fit) and
+    inference times per repeat. The ensemble median across 10 members is
+    used as the final reported prediction.
+
+Step 2d — SHAP interpretability (optional; Section 4D, Table 2 of the paper):
+    For the longest training scenario only, run KernelExplainer-based SHAP
+    analysis across all ensemble models. Use 50 background samples and
+    200 test samples for computational efficiency. Compute first-order
+    (mean absolute SHAP) and second-order (pairwise interaction) feature
+    importances aggregated across all ensemble members.
+
+Configuration:
+--------------
+    optMod  = 0    # 0 = TabPFNv2 (paper primary model), 1 = TabDPT
+    optSHAP = 0    # 0 = skip SHAP analysis, 1 = run SHAP (reproduces Table 2)
+
+Output Files:
+-------------
+SampleSize_Sensitivity_<model>.csv — R2 statistics and timing per training
+    length; reproduces Table 1 of the paper. Columns: multiplier,
+    actual_days, actual_sample_size, n_models, r2_median, r2_mean,
+    r2_min, r2_max, icl_time_mean, icl_time_std, inference_time_mean,
+    inference_time_std.
+predictions_<model>.csv — date, observed LCn2_15m, and ensemble median
+    predictions for each training length tested; used for Figures 1 and 2.
+SHAP_1st_order_<model>.csv — mean absolute SHAP value per feature;
+    reproduces Table 2 of the paper.
+SHAP_2nd_order_<model>.csv — pairwise SHAP interaction strengths.
+SHAP_values_<model>.pkl — raw SHAP arrays and metadata for custom plotting.
+
+AI Assistance: Claude AI (Anthropic) was used for documentation, code
+    restructuring, and performance optimization.
+"""
+
+
 # =============================================================================
-# TabPFN Analysis of Cn2 Data - Variable Training Sample Sizes
-# Sukanta Basu (University at Albany)
-# Last updated: August 20, 2025
+# IMPORTS
 # =============================================================================
 
 import numpy as np
@@ -19,6 +110,7 @@ if optMod == 0:
     from tabpfn import TabPFNRegressor
 else:
     from tabdpt import TabDPTRegressor
+
 
 # =============================================================================
 # DIRECTORIES AND CONFIGURATION
@@ -86,6 +178,7 @@ predictions_df = pd.DataFrame({
     'date': df_Tst['TIME'].values,
     'observed': yTst
 })
+
 
 # =============================================================================
 # ANALYSIS LOOP - VARIABLE TRAINING SAMPLE SIZES

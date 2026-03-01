@@ -1,7 +1,78 @@
+# Copyright (c) 2026 Sukanta Basu
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+"""
+File: Step1_Preprocess.py
+==========================
+:Author: Sukanta Basu (University at Albany)
+:Date: March 1, 2026
+:Description: Data loading, quality control, and feature engineering for
+    Mauna Loa ISFF tower observations (June–August 2006).
+
+Associated Publication:
+-----------------------
+S. Basu, "Leveraging deep learning-based foundation models for optical
+turbulence (Cn2) estimation under data scarcity," Applied Optics,
+https://doi.org/10.1364/AO.585045
+
+This script implements the data preprocessing and feature engineering
+described in Section 3 of the paper (Sections 3A–3E).
+
+Overall Strategy:
+-----------------
+Step 1a — Raw data loading:
+    Read 5-minute NetCDF files for each day in the campaign period
+    (June–August 2006). Extract Cn2 at 6, 15, and 25 m tower levels
+    (converted to log10 per Eq. 2 of the paper), surface meteorology
+    (pressure, temperature, dew point, wind speed and direction), and
+    tower-level wind components and temperatures.
+
+Step 1b — Despiking (Section 3B, Eq. 3 of the paper):
+    Apply z-score quality control (3σ threshold) to raw tower temperatures
+    (T_6m, T_15m, T_25m) and wind components (u, v at 6, 15, 25 m).
+    Alternative methods (Local Outlier Factor, Isolation Forest) are also
+    implemented but not used by default.
+
+Step 1c — Derived physical quantities (Section 3C, Eq. 4 of the paper):
+    Compute potential temperature (TH) at each tower level from despiked
+    temperatures using the barometric formula and surface pressure.
+    Compute vertical gradients (dTHdz, dUdz, dVdz) at the 15 m midpoint
+    using a non-uniform centered finite difference scheme, and combine wind
+    component gradients into scalar wind shear magnitude (S_15m).
+
+Step 1d — Cyclical feature encoding (Section 3D, Eqs. 1 and 5 of the paper):
+    Encode time of day, day of year, and wind direction as sine/cosine pairs
+    to preserve their circular continuity for machine learning models.
+
+Output:
+-------
+mauna_loa_processed_data.csv — cleaned and feature-enriched dataset ready
+    for use in Step 2. Contains the 10 input features and LCn2_15m target
+    described in Section 3E of the paper.
+
+AI Assistance: Claude AI (Anthropic) was used for documentation, code
+    restructuring, and performance optimization.
+"""
+
 # =============================================================================
-# Extraction of Meteorological Data from Mauna Loa Tower
-# Sukanta Basu (University at Albany)
-# Last updated: August 20, 2025
+# IMPORTS
 # =============================================================================
 
 import numpy as np
