@@ -62,7 +62,7 @@ print(f"June data: {len(df_june)} clean samples")
 print(f"July data: {len(df_july)} clean samples")
 print(f"August data: {len(df_august)} clean samples")
 
-# FIX 1: Concatenate DataFrames properly instead of adding them
+# Concatenate DataFrames
 df_Trn = pd.concat([df_june, df_august], ignore_index=True)
 df_Tst = df_july
 
@@ -91,7 +91,7 @@ predictions_df = pd.DataFrame({
 # ANALYSIS LOOP - VARIABLE TRAINING SAMPLE SIZES
 # =============================================================================
 
-# FIX 2: Set random seed for reproducible shuffling
+# Set random seed for reproducible shuffling
 np.random.seed(42)
 
 # Initialize list to store results for DataFrame
